@@ -1,5 +1,8 @@
 import 'package:covid_statistics/src/canvas/arrow_clip_path.dart';
+import 'package:covid_statistics/src/components/bar_chart.dart';
+import 'package:covid_statistics/src/components/covid_statistics_viewer.dart';
 import 'package:covid_statistics/src/controller/covid_statistics_controller.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -22,6 +25,146 @@ class App extends GetView<CovidStatisticsController> {
           ),
         ],
       ),
+    );
+  }
+
+  List<Widget> _background() {
+    return [
+      Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.centerRight,
+            end: Alignment.centerLeft,
+            colors: [
+              Color(0xff3c727c),
+              Color(0xff33656e),
+            ],
+          ),
+        ),
+      ),
+      Positioned(
+        left: -110,
+        top: headerTopZone + 40,
+        child: Container(
+          child: Image.asset(
+            'assets/covid_img.png',
+            width: Get.size.width * 0.7,
+          ),
+        ),
+      ),
+      Positioned(
+        top: headerTopZone + 10,
+        left: 0,
+        right: 0,
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: Color(0xff195f68),
+            ),
+            child: Obx(
+              () => Text(
+                controller.todayData.standardDayString,
+                style:
+                    TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ),
+      ),
+      Positioned(
+        top: headerTopZone + 60,
+        right: 40,
+        child: Obx(
+          () => CovidStatisticsViewer(
+            title: '확진자',
+            addedCount: controller.todayData.calcDecideCnt,
+            totalCount: controller.todayData.decideCnt ?? 0,
+            titleColor: Colors.white,
+            subvalueColor: Colors.white,
+            upDown:
+                controller.calculrateUpDown(controller.todayData.calcDecideCnt),
+          ),
+        ),
+      ),
+    ];
+  }
+
+  Widget _todayStatistics() {
+    return Obx(
+      () => Row(
+        children: [
+          Expanded(
+            child: CovidStatisticsViewer(
+              title: '격리해제',
+              addedCount: 1129,  //controller.todayData.calcClearCnt,
+              totalCount: 166375, //controller.todayData.clearCnt ?? 0,
+              upDown: controller
+                  .calculrateUpDown(controller.todayData.calcDecideCnt),
+              dense: true,
+            ),
+          ),
+          Container(
+            height: 60,
+            child: VerticalDivider(
+              color: Color(0xff),
+            ),
+          ),
+          Expanded(
+            child: CovidStatisticsViewer(
+              title: '누적 검사자 ',
+              addedCount: controller.todayData.calcAccExamCnt,
+              totalCount: controller.todayData.accExamCnt ?? 0,
+              upDown: controller
+                  .calculrateUpDown(controller.todayData.calcDecideCnt),
+              dense: true,
+            ),
+          ),
+          Container(
+            height: 60,
+            child: VerticalDivider(
+              color: Color(0xff),
+            ),
+          ),
+          Expanded(
+            child: CovidStatisticsViewer(
+              title: '사망자',
+              addedCount: controller.todayData.caclcDeathCnt,
+              totalCount: controller.todayData.deathCnt ?? 0,
+              upDown: controller
+                  .calculrateUpDown(controller.todayData.caclcDeathCnt),
+              dense: true,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _covidTrendsChart() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          "확진자 추이",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
+        AspectRatio(
+          aspectRatio: 1.7,
+          child: Obx(
+            () => controller.weekdays.length == 0
+                ? Container()
+                : CovidBarChart(
+                    covidDatas: controller.weekdays,
+                    maxY : controller.maxDecideValue!,
+                  ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -52,85 +195,40 @@ class App extends GetView<CovidStatisticsController> {
         ],
       ),
       extendBodyBehindAppBar: true,
-      body: Stack(children: [
-        Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.centerRight,
-              end: Alignment.centerLeft,
-              colors: [
-                Color(0xff3c727c),
-                Color(0xff33656e),
-              ],
-            ),
-          ),
-        ),
-        Positioned(
-          left: -110,
-          top: headerTopZone + 40,
-          child: Container(
-            child: Image.asset(
-              'assets/covid_img.png',
-              width: Get.size.width * 0.7,
-            ),
-          ),
-        ),
-        Positioned(
-          top: headerTopZone + 10,
-          left: 0,
-          right: 0,
-          child: Center(
+      body: Stack(
+        children: [
+          ..._background(),
+          Positioned(
+            top: headerTopZone + 200,
+            left: 0,
+            right: 0,
+            bottom: 0,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                color: Color(0xff195f68),
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(40),
+                  topRight: Radius.circular(40),
+                ),
               ),
-              child: Text(
-                '07.24 00:00 기준',
-                style:
-                    TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(25),
+                  child: Column(
+                    children: [
+                      _todayStatistics(),
+                      SizedBox(
+                        height: 20,
+                      ),
+                      _covidTrendsChart(),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
-        ),
-        Positioned(
-            top: headerTopZone + 60,
-            right: 40,
-            child: Column(
-              children: [
-                Text(
-                  '확진자',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                  ),
-                ),
-                SizedBox(height: 5,),
-                Row(
-                  children: [
-                    ClipPath(
-                      clipper: ArrowClipPath(),
-                      child: Container(width: 20, height: 20, color: Color(0xffcf5f51))),
-                    Text(
-                      '1,629',
-                      style: TextStyle(
-                          color: Color(0xffcf5f51),
-                          fontSize: 50,
-                          fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-                Text(
-                  '187,362',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                  ),
-                ),
-              ],
-            ))
-      ]),
+        ],
+      ),
     );
   }
 }
